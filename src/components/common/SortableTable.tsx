@@ -217,7 +217,7 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
     renderUpdateComponent,
     renderCreateComponent,
     deleteAction,
-    stateToExcel= (rows: T) => rows,
+    stateToExcel = (rows: T) => rows,
   } = props;
   const [order, setOrder] = React.useState<Order>("asc");
   const [orderBy, setOrderBy] = React.useState<keyof T>("id");
@@ -230,6 +230,7 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
     event: React.MouseEvent<unknown>,
     property: keyof T
   ) => {
+    event.preventDefault();
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
@@ -245,6 +246,7 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
   };
 
   const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
+    event.stopPropagation();
     const selectedIndex = selected.indexOf(id);
     let newSelected: readonly number[] = [];
 
@@ -264,6 +266,7 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
   };
 
   const handleChangePage = (event: unknown, newPage: number) => {
+    console.log("event", event);
     setPage(newPage);
   };
 
@@ -279,16 +282,16 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
   const visibleRows = React.useMemo(() => {
-    // console.log("rows", rows);
-    // console.log("order", order);
-    // console.log("orderBy", orderBy);
-    return [...rows]
-      .sort(getComparator(order, orderBy))
-      .filter((row) => {
-        const theString = Object.values(row).join(" ").toLowerCase();
-        return theString.includes(keyword.toLowerCase());
-      })
-      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    return (
+      [...rows]
+        //@ts-expect-error orderBy is not a string
+        .sort(getComparator(order, orderBy))
+        .filter((row) => {
+          const theString = Object.values(row).join(" ").toLowerCase();
+          return theString.includes(keyword.toLowerCase());
+        })
+        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+    );
   }, [order, orderBy, page, rowsPerPage, rows, keyword]);
 
   const downloadExcel = React.useCallback(() => {
@@ -485,7 +488,7 @@ function EditModal<T extends CommonEntity>({
   );
 }
 
-function CreateModal<T extends CommonEntity>({
+function CreateModal({
   renderCreateComponent,
 }: {
   renderCreateComponent?: (callback: () => void) => React.ReactNode;

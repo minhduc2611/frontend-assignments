@@ -38,7 +38,7 @@ function CommonForm<T extends FormikValues>({
         validationSchema={config.validationSchema}
       >
         {(props: FormikProps<T>) => {
-          const { errors, touched, initialValues, values, resetForm } = props;
+          const { errors, initialValues, values, resetForm } = props;
           const isDifferent =
             JSON.stringify(initialValues) !== JSON.stringify(values);
           return (
