@@ -1,0 +1,8 @@
+
+
+
+GET https://customer-rest-service-frontend-personaltrainer.2.rahtiapp.fi/api/customers
+###
+
+GET https://customer-rest-service-frontend-personaltrainer.2.rahtiapp.fi/api/trainings
+###
