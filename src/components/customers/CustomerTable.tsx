@@ -1,5 +1,5 @@
 import { useCustomerStore } from "../../store/useCustomerStore";
-import { SCustomer } from "../../types/customers";
+import { SCustomer, transformSCustomerToExcel } from "../../types/customers";
 import EnhancedSortableTable, { HeadCell } from "../common/SortableTable";
 import CustomerCreate from "./CustomerCreate";
 import CustomerUpdate from "./CustomerUpdate";
@@ -59,11 +59,14 @@ const CustomerTable = () => {
         renderUpdateComponent={(row, callback) => (
           <CustomerUpdate customer={row} afterSuccess={callback} />
         )}
-        renderCreateComponent={(callback) => <CustomerCreate afterSuccess={callback}  />}
+        renderCreateComponent={(callback) => (
+          <CustomerCreate afterSuccess={callback} />
+        )}
         deleteAction={(row, callback) => {
           deleteCustomer(row.id);
           callback();
         }}
+        stateToExcel={transformSCustomerToExcel}
       />
     </div>
   );

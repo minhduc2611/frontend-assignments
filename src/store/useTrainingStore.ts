@@ -1,5 +1,10 @@
 import { create } from "zustand";
-import { createOneTraining, deleteOneTraining, getAllTrainings, updateOneTraining } from "../services/trainings";
+import {
+  createOneTraining,
+  deleteOneTraining,
+  getAllTrainings,
+  updateOneTraining,
+} from "../services/trainings";
 import {
   STraining,
   transformITrainingToSTraining,
@@ -9,6 +14,7 @@ import { toast } from "react-toastify";
 
 export interface TrainingState {
   trainings: STraining[];
+  statisticData: { labels: string[]; data: number[] };
   isLoading: boolean;
   getAllTrainings: () => void;
   updateTraining: (training: STraining) => void;
@@ -16,7 +22,7 @@ export interface TrainingState {
   deleteTraining: (id: number | null) => void;
 }
 
-export const useTrainingStore = create<TrainingState>((set) => {
+export const useTrainingStore = create<TrainingState>((set, get) => {
   const getTrainings = async () => {
     set(() => ({ isLoading: true }));
     const customers = await getAllTrainings();
@@ -25,6 +31,26 @@ export const useTrainingStore = create<TrainingState>((set) => {
         transformITrainingToSTraining
       ),
       isLoading: false,
+    }));
+    updateStatisticalData();
+  };
+
+  const updateStatisticalData = async () => {
+    const { trainings } = get();
+    if (trainings && trainings.length === 0) {
+      await getTrainings();
+    }
+    const dataMap = trainings.reduce((acc, training) => {
+      acc[training.activity] =
+        (acc[training.activity] || 0) + training.duration;
+      return acc;
+    }, {} as { [key: string]: number });
+    console.log(dataMap);
+    set(() => ({
+      statisticData: {
+        labels: Object.keys(dataMap),
+        data: Object.values(dataMap),
+      },
     }));
   };
 
@@ -63,9 +89,11 @@ export const useTrainingStore = create<TrainingState>((set) => {
   return {
     trainings: [],
     isLoading: false,
+    statisticData: { labels: [], data: [] },
     getAllTrainings: getTrainings,
     updateTraining: updateTraining,
     createTraining: createTraining,
     deleteTraining: deleteTraining,
+    updateStatisticalData: updateStatisticalData,
   };
 });

@@ -1,5 +1,5 @@
 import { useTrainingStore } from "../../store/useTrainingStore";
-import { STraining } from "../../types/trainings";
+import { STraining, transformSTrainingToExcel } from "../../types/trainings";
 import time from "../../utils/timeUtils";
 import EnhancedSortableTable, { HeadCell } from "../common/SortableTable";
 import TrainingCreate from "./TrainingCreate";
@@ -48,6 +48,7 @@ const TrainingTable = () => {
           deleteTraining(row.id);
           callback();
         }}
+        stateToExcel={transformSTrainingToExcel}
       />
     </div>
   );

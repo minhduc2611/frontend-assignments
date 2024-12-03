@@ -1,4 +1,4 @@
-import { AddBox, CloseOutlined } from "@mui/icons-material";
+import { AddBox, CloseOutlined, Download } from "@mui/icons-material";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Button, Modal, Stack, TextField } from "@mui/material";
@@ -21,6 +21,7 @@ import Typography from "@mui/material/Typography";
 import { visuallyHidden } from "@mui/utils";
 import * as React from "react";
 import { CommonEntity } from "../../types/common";
+import { exportDataToExcel } from "../../utils/excelUtils";
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
   if (b[orderBy] < a[orderBy]) {
@@ -125,9 +126,10 @@ interface EnhancedTableToolbarProps {
   keyword?: string;
   setKeyword?: (keyword: string) => void;
   renderCreateComponent?: (callback: () => void) => React.ReactNode;
+  downloadExcel?: () => void;
 }
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-  const { numSelected, title, renderCreateComponent } = props;
+  const { numSelected, title, renderCreateComponent, downloadExcel } = props;
   return (
     <Toolbar
       sx={[
@@ -164,9 +166,14 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
         </Typography>
       )}
       {numSelected > 0 ? (
-        <Tooltip title="Delete">
-          <IconButton>
-            <DeleteIcon />
+        <Tooltip title="Download Excel">
+          <IconButton
+            onClick={() => {
+              console.log("download");
+              downloadExcel?.();
+            }}
+          >
+            <Download />
           </IconButton>
         </Tooltip>
       ) : (
@@ -198,6 +205,7 @@ type EnhancedSortableTableProps<T extends CommonEntity> = {
   renderUpdateComponent?: (row: T, callback: () => void) => React.ReactNode;
   renderCreateComponent?: (callback: () => void) => React.ReactNode;
   deleteAction?: (row: T, callback: () => void) => void;
+  stateToExcel?: (rows: T) => any;
 };
 export default function EnhancedSortableTable<T extends CommonEntity>(
   props: EnhancedSortableTableProps<T>
@@ -209,6 +217,7 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
     renderUpdateComponent,
     renderCreateComponent,
     deleteAction,
+    stateToExcel= (rows: T) => rows,
   } = props;
   const [order, setOrder] = React.useState<Order>("asc");
   const [orderBy, setOrderBy] = React.useState<keyof T>("id");
@@ -282,6 +291,13 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   }, [order, orderBy, page, rowsPerPage, rows, keyword]);
 
+  const downloadExcel = React.useCallback(() => {
+    console.log("download excel", selected);
+    const result = rows.filter((row) => selected.includes(row.id || 0));
+    const res = result.map(stateToExcel);
+    exportDataToExcel(res, `${title}_${new Date().getUTCSeconds()}`);
+  }, [selected]);
+
   React.useEffect(() => {
     setPage(0);
   }, [keyword]);
@@ -294,6 +310,7 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
           title={title}
           numSelected={selected.length}
           renderCreateComponent={renderCreateComponent}
+          downloadExcel={downloadExcel}
         />
         <TableContainer>
           <Table

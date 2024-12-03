@@ -116,3 +116,16 @@ export const transformSCustomerToCustomerBody = (
   }
   return result;
 };
+
+export const transformSCustomerToExcel = (customer: SCustomer) => {
+  return {
+    id: customer.id,
+    firstname: customer.firstname,
+    lastname: customer.lastname,
+    streetaddress: customer.streetaddress,
+    postcode: customer.postcode,
+    city: customer.city,
+    email: customer.email,
+    phone: customer.phone,
+  };
+};

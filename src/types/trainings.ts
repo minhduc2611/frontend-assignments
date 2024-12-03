@@ -58,6 +58,17 @@ export const transformSTrainingToTrainingBody = (
   };
 };
 
+export const transformSTrainingToExcel = (
+  training: STraining
+) => {
+  return {
+    id: training.id,
+    date: training.date.format("YYYY-MM-DDTHH:mm:ssZ"),
+    duration: training.duration,
+    activity: training.activity,
+  };
+};
+
 export const TrainingSchema = Yup.object().shape({
   date: Yup.string().required("Required"),
   duration: Yup.number()
