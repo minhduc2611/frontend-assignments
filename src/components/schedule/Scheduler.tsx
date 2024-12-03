@@ -280,7 +280,6 @@ function Scheduler({ events }: { events: SEvent[] }) {
                         return (
                           <Box
                             key={index}
-                            bgcolor={"white"}
                             color={"white"}
                             padding={1}
                           >
@@ -306,7 +305,6 @@ function Scheduler({ events }: { events: SEvent[] }) {
                         return (
                           <Box
                             key={index}
-                            bgcolor={"white"}
                             color={"white"}
                             padding={1}
                           >
