@@ -4,7 +4,7 @@ export type IPagination = {
 };
 
 export type CommonEntity = {
-  id: number;
+  id: number | null;
 }
 
 export type RestResponse<N extends string, T> = {

@@ -1,8 +1,8 @@
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/en";
 import "dayjs/locale/fi";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { getLang } from "./language";
+import { getLang } from "./languageUtils";
 
 class TimeUtils {
   dayjs = dayjs;
@@ -12,7 +12,10 @@ class TimeUtils {
   }
   formatTime = (time: string, template?: string) => {
     return this.dayjs(time).format(template || "DD.MM.YYYY HH:mm");
-};
+  };
+  formatTimeDayjs = (time: Dayjs, template?: string) => {
+    return time.format(template || "DD.MM.YYYY HH:mm");
+  };
   calculateTimeDiff = (time: string) => {
     const timeDiffFromNowMinute = this.dayjs(time).diff(this.dayjs(), "minute");
     if (timeDiffFromNowMinute < 60) {

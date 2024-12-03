@@ -4,7 +4,9 @@ import { useCustomerStore } from "../store/useCustomerStore";
 
 function Customer() {
   const { getAllCustomers } = useCustomerStore();
-  useEffect(() => {getAllCustomers()}, []);
+  useEffect(() => {
+    getAllCustomers();
+  }, []);
   return <CustomerTable />;
 }
 

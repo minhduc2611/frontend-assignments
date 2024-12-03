@@ -1,6 +1,7 @@
+import { AddBox, CloseOutlined } from "@mui/icons-material";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import DeleteIcon from "@mui/icons-material/Delete";
-import FilterListIcon from "@mui/icons-material/FilterList";
+import { Button, Modal, Stack, TextField } from "@mui/material";
 import Box from "@mui/material/Box";
 import Checkbox from "@mui/material/Checkbox";
 import IconButton from "@mui/material/IconButton";
@@ -20,8 +21,6 @@ import Typography from "@mui/material/Typography";
 import { visuallyHidden } from "@mui/utils";
 import * as React from "react";
 import { CommonEntity } from "../../types/common";
-import { Button, Modal, Stack, TextField } from "@mui/material";
-import InventoryIcon from "@mui/icons-material/Inventory";
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
   if (b[orderBy] < a[orderBy]) {
@@ -125,9 +124,10 @@ interface EnhancedTableToolbarProps {
   numSelected: number;
   keyword?: string;
   setKeyword?: (keyword: string) => void;
+  renderCreateComponent?: (callback: () => void) => React.ReactNode;
 }
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-  const { numSelected, title } = props;
+  const { numSelected, title, renderCreateComponent } = props;
   return (
     <Toolbar
       sx={[
@@ -170,17 +170,22 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
           </IconButton>
         </Tooltip>
       ) : (
-        <>
-          <Tooltip title="Filter">
+        <Stack direction={"row"} gap={4} alignItems={"center"}>
+          <Box style={{ width: 300 }}>
             <TextField
+              fullWidth
               id="standard-basic"
               label="Search"
-              variant="standard"
+              variant="outlined"
               value={props.keyword}
               onChange={(e) => props.setKeyword?.(e.target.value)}
             />
-          </Tooltip>
-        </>
+          </Box>
+
+          <Box sx={{ flexGrow: 1 }}>
+            <CreateModal renderCreateComponent={renderCreateComponent} />
+          </Box>
+        </Stack>
       )}
     </Toolbar>
   );
@@ -190,11 +195,21 @@ type EnhancedSortableTableProps<T extends CommonEntity> = {
   rows: T[];
   headCells: readonly HeadCell<T>[];
   title: string;
+  renderUpdateComponent?: (row: T, callback: () => void) => React.ReactNode;
+  renderCreateComponent?: (callback: () => void) => React.ReactNode;
+  deleteAction?: (row: T, callback: () => void) => void;
 };
 export default function EnhancedSortableTable<T extends CommonEntity>(
   props: EnhancedSortableTableProps<T>
 ) {
-  const { rows, headCells, title } = props;
+  const {
+    rows,
+    headCells,
+    title,
+    renderUpdateComponent,
+    renderCreateComponent,
+    deleteAction,
+  } = props;
   const [order, setOrder] = React.useState<Order>("asc");
   const [orderBy, setOrderBy] = React.useState<keyof T>("id");
   const [selected, setSelected] = React.useState<readonly number[]>([]);
@@ -213,7 +228,7 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
 
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      const newSelected = rows.map((n) => n.id);
+      const newSelected = rows.map((n) => n.id || 0);
       setSelected(newSelected);
       return;
     }
@@ -255,20 +270,21 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
   const visibleRows = React.useMemo(() => {
-    console.log("rows", rows);
-    console.log("order", order);
-    console.log("orderBy", orderBy);
+    // console.log("rows", rows);
+    // console.log("order", order);
+    // console.log("orderBy", orderBy);
     return [...rows]
       .sort(getComparator(order, orderBy))
-      .filter((row) =>
-        Object.values(row)
-          .join(" ")
-          .toLowerCase()
-          .includes(keyword.toLowerCase())
-      )
+      .filter((row) => {
+        const theString = Object.values(row).join(" ").toLowerCase();
+        return theString.includes(keyword.toLowerCase());
+      })
       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   }, [order, orderBy, page, rowsPerPage, rows, keyword]);
 
+  React.useEffect(() => {
+    setPage(0);
+  }, [keyword]);
   return (
     <Box sx={{ width: "100%" }}>
       <Paper sx={{ width: "100%", mb: 2 }}>
@@ -277,6 +293,7 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
           setKeyword={setKeyword}
           title={title}
           numSelected={selected.length}
+          renderCreateComponent={renderCreateComponent}
         />
         <TableContainer>
           <Table
@@ -295,13 +312,13 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
             />
             <TableBody>
               {visibleRows.map((row, index) => {
-                const isItemSelected = selected.includes(row.id);
+                const isItemSelected = selected.includes(row.id || 0);
                 const labelId = `enhanced-table-checkbox-${index}`;
 
                 return (
                   <TableRow
                     hover
-                    onClick={(event) => handleClick(event, row.id)}
+                    onClick={(event) => handleClick(event, row.id || 0)}
                     role="checkbox"
                     aria-checked={isItemSelected}
                     tabIndex={-1}
@@ -327,13 +344,16 @@ export default function EnhancedSortableTable<T extends CommonEntity>(
                           align={"left"}
                           padding={cell.disablePadding ? "none" : "normal"}
                         >
-                          {cell.render ? cell.render(row): String(row[key])}
+                          {cell.render ? cell.render(row) : String(row[key])}
                         </TableCell>
                       );
                     })}
                     <TableCell>
-                      <EditModal row={row} />
-                      <DeleteModal row={row} />
+                      <EditModal
+                        row={row}
+                        renderUpdateComponent={renderUpdateComponent}
+                      />
+                      <DeleteModal row={row} deleteAction={deleteAction} />
                     </TableCell>
                   </TableRow>
                 );
@@ -389,16 +409,21 @@ const styleEdit = {
   transform: "translate(-50%, -50%)",
   width: 700,
   bgcolor: "background.paper",
-  border: "2px solid #000",
+  borderRadius: "10px",
   boxShadow: 24,
   p: 4,
 };
 
-function EditModal<T extends CommonEntity>({ row }: { row: T }) {
+function EditModal<T extends CommonEntity>({
+  row,
+  renderUpdateComponent,
+}: {
+  row: T;
+  renderUpdateComponent?: (row: T, handleClose: () => void) => React.ReactNode;
+}) {
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
-  const handleClose = (e) => {
-    e.stopPropagation();
+  const handleClose = () => {
     setOpen(false);
   };
 
@@ -417,23 +442,82 @@ function EditModal<T extends CommonEntity>({ row }: { row: T }) {
       <Modal
         keepMounted
         open={open}
-        onClose={handleClose}
+        onClose={() => {
+          handleClose();
+        }}
         aria-labelledby="keep-mounted-modal-title"
         aria-describedby="keep-mounted-modal-description"
       >
-        <Box sx={styleEdit}>
-          <Typography id="keep-mounted-modal-title" variant="h6" component="h2">
-            Text in a modal
-          </Typography>
-          <Typography id="keep-mounted-modal-description" sx={{ mt: 2 }}>
-            Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
-          </Typography>
+        <Box
+          onClick={(e) => e.stopPropagation()}
+          sx={styleEdit}
+          position={"relative"}
+        >
+          <Box
+            position={"absolute"}
+            right={0}
+            paddingRight={4}
+            style={{ cursor: "pointer" }}
+          >
+            <CloseOutlined onClick={handleClose} />
+          </Box>
+          {renderUpdateComponent && renderUpdateComponent(row, handleClose)}
         </Box>
       </Modal>
     </>
   );
 }
 
+function CreateModal<T extends CommonEntity>({
+  renderCreateComponent,
+}: {
+  renderCreateComponent?: (callback: () => void) => React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <Tooltip title="Add">
+        <IconButton
+          color="primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpen();
+          }}
+        >
+          <AddBox />
+        </IconButton>
+      </Tooltip>
+      <Modal
+        keepMounted
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="keep-mounted-modal-title"
+        aria-describedby="keep-mounted-modal-description"
+      >
+        <Box
+          onClick={(e) => e.stopPropagation()}
+          sx={styleEdit}
+          position={"relative"}
+        >
+          <Box
+            position={"absolute"}
+            right={0}
+            paddingRight={4}
+            style={{ cursor: "pointer" }}
+          >
+            <CloseOutlined onClick={handleClose} />
+          </Box>
+          {renderCreateComponent && renderCreateComponent(handleClose)}
+        </Box>
+      </Modal>
+    </>
+  );
+}
 const styleDelete = {
   position: "absolute",
   top: "50%",
@@ -441,22 +525,28 @@ const styleDelete = {
   transform: "translate(-50%, -50%)",
   width: 400,
   bgcolor: "background.paper",
-  border: "2px solid #000",
   boxShadow: 24,
   p: 4,
+  borderRadius: "10px",
 };
 
-function DeleteModal<T extends CommonEntity>({ row }: { row: T }) {
+function DeleteModal<T extends CommonEntity>({
+  row,
+  deleteAction,
+}: {
+  row: T;
+  deleteAction?: (row: T, callback: () => void) => void;
+}) {
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
-  const handleClose = (e) => {
-    e.stopPropagation();
+  const handleClose = () => {
     setOpen(false);
   };
 
   return (
     <>
       <IconButton
+        color="error"
         onClick={(e) => {
           e.stopPropagation();
           console.log("delete", row.id);
@@ -469,17 +559,55 @@ function DeleteModal<T extends CommonEntity>({ row }: { row: T }) {
       <Modal
         keepMounted
         open={open}
-        onClose={handleClose}
+        onClose={(e: any) => {
+          e.stopPropagation();
+          handleClose();
+        }}
         aria-labelledby="keep-mounted-modal-title"
         aria-describedby="keep-mounted-modal-description"
       >
-        <Box sx={styleDelete}>
-          <Typography id="keep-mounted-modal-title" variant="h6" component="h2">
-            Text in a modal
+        <Box
+          onClick={(e) => e.stopPropagation()}
+          sx={styleDelete}
+          position={"relative"}
+          padding={3}
+        >
+          {/* <Box
+            position={"absolute"}
+            right={0}
+            paddingRight={4}
+            style={{ cursor: "pointer" }}
+          >
+            <CloseOutlined onClick={handleClose} />
+          </Box> */}
+          <Typography
+            id="keep-mounted-modal-title"
+            variant="h6"
+            component="h2"
+            paddingTop={2}
+            align="center"
+          >
+            Are you sure you want to delete?
           </Typography>
-          <Typography id="keep-mounted-modal-description" sx={{ mt: 2 }}>
-            Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
-          </Typography>
+          <Stack
+            direction={"row"}
+            spacing={2}
+            justifyContent={"end"}
+            paddingTop={3}
+          >
+            <Button
+              variant="contained"
+              onClick={() => {
+                console.log("delete", row.id);
+                deleteAction?.(row, handleClose);
+              }}
+            >
+              Yes
+            </Button>
+            <Button variant="outlined" onClick={handleClose}>
+              No
+            </Button>
+          </Stack>
         </Box>
       </Modal>
     </>

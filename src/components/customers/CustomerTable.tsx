@@ -1,6 +1,8 @@
 import { useCustomerStore } from "../../store/useCustomerStore";
 import { SCustomer } from "../../types/customers";
 import EnhancedSortableTable, { HeadCell } from "../common/SortableTable";
+import CustomerCreate from "./CustomerCreate";
+import CustomerUpdate from "./CustomerUpdate";
 
 const headCells: readonly HeadCell<SCustomer>[] = [
   {
@@ -47,13 +49,21 @@ const headCells: readonly HeadCell<SCustomer>[] = [
   },
 ];
 const CustomerTable = () => {
-  const { customers } = useCustomerStore();
+  const { customers, deleteCustomer } = useCustomerStore();
   return (
     <div>
       <EnhancedSortableTable<SCustomer>
         title="Customers"
         rows={customers}
         headCells={headCells}
+        renderUpdateComponent={(row, callback) => (
+          <CustomerUpdate customer={row} afterSuccess={callback} />
+        )}
+        renderCreateComponent={(callback) => <CustomerCreate afterSuccess={callback}  />}
+        deleteAction={(row, callback) => {
+          deleteCustomer(row.id);
+          callback();
+        }}
       />
     </div>
   );
